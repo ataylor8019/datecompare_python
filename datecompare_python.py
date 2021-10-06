@@ -124,7 +124,7 @@ def validateRawDateInput(inputDate):
     filter = re.compile(r'^\s*[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}.*$')    
     matchedNumber = filter.match(inputDate)
     if (matchedNumber):
-        return matchedNumber.group().split()
+        return matchedNumber.group().strip()
 
     return None
 
