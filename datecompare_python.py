@@ -124,7 +124,7 @@ def validateRawDateInput(inputDate):
     filter = re.compile(r'^\s*[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}.*$')    
     matchedNumber = filter.match(inputDate)
     if (matchedNumber):
-        return matchedNumber.group()
+        return matchedNumber.group().split()
 
     return None
 
@@ -146,8 +146,8 @@ if ((validatedBaseDate == None) or (validatedCompareDate == None)):
     quit()
 
 # Do a split on our datelike strings based on the '/' symbol
-baseDateList = re.split(r'/', rawUserInputBaseDate)
-compareDateList = re.split(r'/', rawUserInputCompareDate)
+baseDateList = re.split(r'/', validatedBaseDate)
+compareDateList = re.split(r'/', validatedCompareDate)
 
 # If the resulting lists do not have exactly 3 entries, they aren't
 # date objects, exit the demo.
