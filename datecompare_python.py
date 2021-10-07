@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # datecompare_python.py
-# version 0.1
+# version 0.2
 # By Allan Taylor
 # 10/05/2021
 #
@@ -22,10 +22,29 @@
 # Usage: 
 # In Windows CMD window: py datecompare_python.py
 # In Bash: python3 datecompare_python.py
+#
+# Revisions:
+#
+# 0.1 - 10/05-10/06/2021: initial commit, syntax, logic error correction as 
+#     described in the Git revision log
+#
+# 0.2 - 10/07/2021: Added function to create ISO formatted date strings, take
+#     date objects, compare them, return value describing relation of first 
+#     parameter to second parameter. Named this new function compareDateObjects.
+#     Changed the name of old function compareDateObjects to compareDateStrings,
+#     to more accurately reflect it's new functionality. Changed some variable names
+#     in the main body to reflect the difference between string and date object
+#     responsibility. Added functionality to return report of date relations. 
+#     Updated comments in main body to reflect introduction of date objects.
+#
 
-
-import string
+from datetime import date
+from datetime import timedelta
+import sys
 import re
+import string
+
+
 
 
 # validate if the digit(s) representing the day comprise a valid
@@ -69,6 +88,21 @@ def returnSanitizedYear(inputYear):
 
     return None
 
+# Creates ISO formatted string: YYYY-MM-DD
+def returnISOFormattedString(inputYear, inputMonth, inputDay):
+    # If one of these parameters is None, no point in trying to build a
+    # string from them, return None. Otherwise return the ISO formatted
+    # hyphenated string.
+    if ((inputYear != None) and (inputMonth != None) and (inputDay != None)):
+        # This needs to be done for inputDay and inputMonth: for ISO formatting,
+        # both of these values NEED to be two digits, regardless of what the user
+        # input.
+        workInputDay = re.sub(r'^[1-9]$', '0' + inputDay, inputDay)
+        workInputMonth = re.sub(r'^[1-9]$', '0' + inputMonth, inputMonth)
+        return inputYear + "-" + workInputMonth + "-" + workInputDay
+
+    return None
+
 # boolean function, performs comparison on values treated as days
 # in the date data
 def compareDays(baseDay, compareDay):
@@ -106,9 +140,31 @@ def compareYears(baseYear, compareYear):
     return False
 
 
-# wrapper function, performs comparisons on all values in the base and compare
-# lists generated in the main body
-def compareDateObjects(workBaseDate, workCompareDate):
+
+# wrapper function, performs comparisons on all date values in the base 
+# and compare lists generated in the main body
+def compareDateObjects(workBaseDateObject, workCompareDateObject):
+    # if one of these objects is None, don't try to compare, return maximum
+    # negative number the system can produce.
+    if ((workBaseDateObject == None) or (workCompareDateObject == None)):
+        return -sys.maxint
+
+    # return positive 1, 0, or negative 1 based on whether base date is
+    # after, on the day of, or before the compare date
+    if (workBaseDateObject > workCompareDateObject):
+        return 1
+    elif (workBaseDateObject == workCompareDateObject):
+        return 0
+    elif (workBaseDateObject < workCompareDateObject):
+        return -1
+
+    # if here, something unforseen has happened, return maximum negative
+    # number system will allow
+    return -sys.maxint
+
+# wrapper function, performs comparisons on all string values in the base 
+# and compare lists generated in the main body
+def compareDateStrings(workBaseDate, workCompareDate):
     validateThatDaysMatch = compareDays(workBaseDate[0], workCompareDate[0])
     validateThatMonthsMatch = compareMonths(workBaseDate[1], workCompareDate[1])
     validateThatYearsMatch = compareYears(returnSanitizedYear(workBaseDate[2]), returnSanitizedYear(workCompareDate[2]))
@@ -193,16 +249,55 @@ if ((not(compareDayValidated)) or (not(compareMonthValidated)) or (not(compareYe
     print("One of your compare date components does not follow valid date syntax. Demo exiting.")
     quit()
 
+print("\nTesting string value equality now:")
 # At this point, we can be reasonably certain that we are working with
-# date objects. This is the final comparison.
-finalDateValidation = compareDateObjects(baseDateList, compareDateList)
+# date strings. This is the comparison of those strings.
+finalDateStringValidation = compareDateStrings(baseDateList, compareDateList)
 
 
-# If true, print that the two values date's match.
-if (finalDateValidation):
-    print("Tested: base date %s matches compare date %s"%(validatedBaseDate, validatedCompareDate))
+# If true, print that the two date strings match.
+if (finalDateStringValidation):
+    print("Tested: base date %s matches compare date %s\n"%(validatedBaseDate, validatedCompareDate))
 else:    # Otherwise print that the values do not match
-    print("Tested: base date %s does NOT match compare date %s"%(validatedBaseDate, validatedCompareDate))
+    print("Tested: base date %s does NOT match compare date %s\n"%(validatedBaseDate, validatedCompareDate))
+
+# 10/07/2021 - Added to allow comparison of date values as opposed to date strings.
+print("Testing numeric date value equality now:")
+
+# Create ISO formatted strings: YYYY-MM-DD from strings taken from the date strings above.
+baseDateStringISOFormat = returnISOFormattedString(returnSanitizedYear(baseDateList[2]), baseDateList[0], baseDateList[1])
+compareDateStringISOFormat = returnISOFormattedString(returnSanitizedYear(compareDateList[2]), compareDateList[0], compareDateList[1])
+
+
+# If one of these date strings is None, there was a problem, don't try to generate date
+# objects from them, exit the demo.
+if ((baseDateStringISOFormat == None) or (compareDateStringISOFormat == None)):
+    print("There was an error in generating an ISO format string. Exiting demo.")
+    quit()
+
+# Generate date objects from our ISO formatted date strings
+
+try:
+    baseDateObjectISOFormat = date.fromisoformat(baseDateStringISOFormat)
+    compareDateObjectISOFormat = date.fromisoformat(compareDateStringISOFormat)
+    
+    # Compare the date objects we have just created
+    dateComparisonResult = compareDateObjects(baseDateObjectISOFormat, compareDateObjectISOFormat)
+    
+    # If the result is anything other than 1, 0, or -1, there was an error, notify the user and exit the demo.
+    if (dateComparisonResult == 1):
+        print("Tested: base date %s comes AFTER date %s\n"%(validatedBaseDate, validatedCompareDate))
+    elif (dateComparisonResult == 0):
+        print("Tested: base date %s is IDENTICAL to date %s\n"%(validatedBaseDate, validatedCompareDate))
+    elif (dateComparisonResult == -1):
+        print("Tested: base date %s comes BEFORE date %s\n"%(validatedBaseDate, validatedCompareDate))
+    else:
+        print("There was an error in the comparison. One of the date objects is in an improper format, or is in a proper format, but not a date (such as 02/30/2021, or 06/31/2021)")
+        quit()
+except BaseException:
+    print("There was an error in the date creation. One of the date objects is in an improper format, or is in a proper format, but not a date (such as 02/30/2021, or 06/31/2021)")
+    quit()
+
 
 # Thank the user for using the demo program, program exits.
 print("Thank you for using the datecompare demo program. Exiting demo.")
